@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="lwjgl-release">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../PGRF2/lwjgl-release" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../../PGRF2/lwjgl-release" />
+    </SOURCES>
+    <jarDirectory url="file://$PROJECT_DIR$/../../PGRF2/lwjgl-release" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/../../PGRF2/lwjgl-release" recursive="false" type="SOURCES" />
+  </library>
+</component>
