@@ -6,6 +6,7 @@ out vec2 texturePos;
 out vec3 lightVector;
 out vec3 normalVector;
 
+uniform mat4 uModelMat;
 uniform mat4 uViewMat;
 uniform mat4 uProjMat;
 uniform int uFuncType;
@@ -13,7 +14,7 @@ uniform int uFuncType;
 const float PI = radians(180);
 const vec3 LIGHT = vec3(1.0, 0.0, 1);
 
-vec3 calulatePosition(vec2 position) {
+vec3 calcPosition(vec2 position) {
     position = position*2 - 1;
     vec3 pos = vec3(position, 0);
     switch(uFuncType) {
@@ -24,13 +25,12 @@ vec3 calulatePosition(vec2 position) {
         case 2:
         float azimuth = position.x * PI;
         float zenith = position.y * 2*PI;
-        float R = 0.5;
-        float zOffset = R + 0.3;
+        float R = 1;
 
         //vec3 pos;
         pos.x = R*sin(zenith)*cos(azimuth);
         pos.y = R*sin(zenith)*sin(azimuth);
-        pos.z = R*cos(zenith) + zOffset;
+        pos.z = R*cos(zenith);
     }
 
     return pos;
@@ -44,11 +44,12 @@ vec3 calcNormal(vec3 pos) {
 }
 
 void main() {
-    vec3 pos = calulatePosition(inPosition);
+    vec3 pos = calcPosition(inPosition);
+    mat4 mvMat = uViewMat * uModelMat;
 
     texturePos = inPosition;
     lightVector = LIGHT - pos;
     normalVector = calcNormal(pos);
 
-    gl_Position = uProjMat * uViewMat * vec4(pos, 1);
+    gl_Position = uProjMat * mvMat * vec4(pos, 1);
 }
