@@ -52,15 +52,15 @@ public abstract class Solid {
     }
 
     public void translate(Vec3D translation) {
-        this.modelMatrix = (new Mat4Transl(translation)).mul(modelMatrix);
+        this.modelMatrix = modelMatrix.mul(new Mat4Transl(translation));
     }
 
     public void rotate(double alpha, Vec3D axis) {
-        this.modelMatrix = new Mat4Rot(alpha, axis).mul(modelMatrix);
+        this.modelMatrix = modelMatrix.mul(new Mat4Rot(alpha, axis));
     }
 
     public void scale(Vec3D scale) {
-        this.modelMatrix = (new Mat4Scale(scale)).mul(modelMatrix);
+        this.modelMatrix = modelMatrix.mul(new Mat4Scale(scale));
     }
 
     public abstract void draw();

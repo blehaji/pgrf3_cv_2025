@@ -29,4 +29,5 @@ void main() {
     vec3 totalDiffuse = INTENSITY * NDL * DIFFUSE_COLOR;
 
     outColor = vec4((AMBIENT_COLOR + totalDiffuse) * baseColor, 0);
+    //outColor = vec4(nd, 1);
 }

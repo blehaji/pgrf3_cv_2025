@@ -3,9 +3,8 @@ package app;
 import app.solid.Grid;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import transforms.Camera;
-import transforms.Mat4PerspRH;
-import transforms.Vec3D;
+import org.lwjgl.glfw.GLFWWindowSizeCallback;
+import transforms.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +15,15 @@ import static org.lwjgl.opengl.GL31.GL_PRIMITIVE_RESTART;
 public class Renderer extends AbstractRenderer {
 
     private Camera camera;
-    private Mat4PerspRH projectionMatrix;
+    private Mat4 projectionMatrix;
     private final List<Grid> grids = new ArrayList<>();
     private int polygonMode = GL_FILL;
+    private boolean isPerspectiveProjection = true;
 
     @Override
     public void init() {
         Grid grid = new Grid();
-        Grid ball = new Grid(50, 50, GL_TRIANGLES, Grid.FUNC_TYPE_SPHERE);
+        Grid ball = new Grid(50, 50, GL_TRIANGLES, Grid.FUNC_TYPE_WAVE);
         ball.scale(new Vec3D(0.5));
 
         grids.add(grid);
@@ -34,7 +34,7 @@ public class Renderer extends AbstractRenderer {
                 .withAzimuth(Math.toRadians(90))
                 .withZenith(Math.toRadians(-15))
                 .withFirstPerson(true);
-        projectionMatrix = new Mat4PerspRH(Math.toRadians(70), (double) height / (double) width, 0.01, 100);
+        updateProjectionMatrix();
 
         updateGrids();
 
@@ -68,18 +68,37 @@ public class Renderer extends AbstractRenderer {
         }
     }
 
+    private void updateProjectionMatrix() {
+        projectionMatrix = isPerspectiveProjection
+                ? new Mat4PerspRH(Math.toRadians(70), (double) height / (double) width, 0.01, 100)
+                : new Mat4OrthoRH(5 * ((double) width / height), 5, 0.01, 100);
+        updateGrids();
+    }
+
+    private void onKeyPress(int key, int mods) {
+        switch (key) {
+            case GLFW.GLFW_KEY_P:
+                changePolygonMode();
+                break;
+            case GLFW.GLFW_KEY_TAB:
+                isPerspectiveProjection = !isPerspectiveProjection;
+                updateProjectionMatrix();
+                break;
+
+            case GLFW.GLFW_KEY_UP:
+                grids.get(1).translate(new Vec3D(0, 0, 0.5));
+                break;
+            case GLFW.GLFW_KEY_DOWN:
+                grids.get(1).translate(new Vec3D(0, 0, -0.5));
+                break;
+        }
+    }
+
     private final GLFWKeyCallback keyCallback = new GLFWKeyCallback() {
         @Override
         public void invoke(long window, int key, int scancode, int action, int mods) {
-            if (key == GLFW.GLFW_KEY_P && action == GLFW.GLFW_PRESS) {
-                changePolygonMode();
-            }
-
-            if (key == GLFW.GLFW_KEY_UP && action == GLFW.GLFW_PRESS) {
-                grids.get(1).translate(new Vec3D(0, 0, 0.5));
-            }
-            if (key == GLFW.GLFW_KEY_DOWN && action == GLFW.GLFW_PRESS) {
-                grids.get(1).translate(new Vec3D(0, 0, -0.5));
+            if (action == GLFW.GLFW_PRESS) {
+                onKeyPress(key, mods);
             }
         }
     };
@@ -87,5 +106,20 @@ public class Renderer extends AbstractRenderer {
     @Override
     public GLFWKeyCallback getKeyCallback() {
         return keyCallback;
+    }
+
+
+    protected GLFWWindowSizeCallback wsCallback = new GLFWWindowSizeCallback() {
+        @Override
+        public void invoke(long window, int w, int h) {
+            width = w;
+            height = h;
+            updateProjectionMatrix();
+        }
+    };
+
+    @Override
+    public GLFWWindowSizeCallback getWsCallback() {
+        return wsCallback;
     }
 }

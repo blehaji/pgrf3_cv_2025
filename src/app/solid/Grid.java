@@ -16,6 +16,8 @@ public class Grid extends Solid {
     public static final int FUNC_TYPE_GRID = 0;
     public static final int FUNC_TYPE_WAVE = 1;
     public static final int FUNC_TYPE_SPHERE = 2;
+    public static final int FUNC_TYPE_CYLINDER = 3;
+    public static final int FUNC_TYPE_HOURGLASS = 4;
 
     private static final int GL_PRIMITIVE_RESTART_INDEX = 65535;
     private static final Set<String> SHADER_UNIFORM_NAMES = Set.of(
