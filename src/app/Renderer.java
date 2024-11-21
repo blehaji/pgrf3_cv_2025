@@ -1,13 +1,17 @@
 package app;
 
 import app.solid.Grid;
+import lwjglutils.OGLTexture;
+import lwjglutils.OGLTexture2D;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import transforms.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.DoubleBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.opengl.GL11.*;
@@ -15,16 +19,21 @@ import static org.lwjgl.opengl.GL31.GL_PRIMITIVE_RESTART;
 
 public class Renderer extends AbstractRenderer {
 
+    private final static String TEXTURE_PATH = "textures/";
+
     private Camera camera;
     private Mat4 projectionMatrix;
+    private final Map<String, OGLTexture> textures = new HashMap<>();
     private final List<Grid> grids = new ArrayList<>();
     private int polygonMode = GL_FILL;
     private boolean isPerspectiveProjection = true;
     private boolean isMousePressed = false;
-    private double[] mouseOrigin = new double[2];
+    private final double[] mouseOrigin = new double[2];
 
     @Override
     public void init() {
+        loadTextures();
+
         Grid grid = new Grid();
         Grid ball = new Grid(50, 50, GL_TRIANGLES, Grid.FuncType.WAVE);
         ball.setColor(1, 0, 1);
@@ -44,6 +53,23 @@ public class Renderer extends AbstractRenderer {
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_PRIMITIVE_RESTART);
+    }
+
+    private void loadTextures() {
+        URL url = getClass().getClassLoader().getResource(TEXTURE_PATH);
+        assert url != null;
+
+        File textureDirectory = new File(url.getFile());
+        for (File file : Objects.requireNonNull(textureDirectory.listFiles())) {
+            String path = TEXTURE_PATH + file.getName();
+            System.out.println("Loading texture: " + path);
+            try {
+                OGLTexture texture = new OGLTexture2D(path);
+                textures.put(file.getName(), texture);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void updateGrids() {
