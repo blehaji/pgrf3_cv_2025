@@ -4,12 +4,14 @@ import lwjglutils.OGLBuffers;
 import transforms.*;
 
 public abstract class Solid {
+    public static final float[] DEFAULT_COLOR = new float[]{1.0f, 1.0f, 0};
+
     protected OGLBuffers buffers;
     protected int topology;
     protected Mat4 modelMatrix = new Mat4Identity();
     protected Mat4 viewMatrix = new Mat4Identity();
     protected Mat4 projectionMatrix = new Mat4Identity();
-    protected float[] color = new float[3];
+    protected float[] color = DEFAULT_COLOR.clone();
 
     public OGLBuffers getBuffers() {
         return buffers;
@@ -49,6 +51,12 @@ public abstract class Solid {
 
     public void setColor(float[] color) {
         this.color = color;
+    }
+
+    public void setColor(float r, float g, float b) {
+        this.color[0] = r;
+        this.color[1] = g;
+        this.color[2] = b;
     }
 
     public void translate(Vec3D translation) {

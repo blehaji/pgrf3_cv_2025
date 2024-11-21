@@ -1,6 +1,7 @@
 package app.solid;
 
 import lwjglutils.OGLBuffers;
+import lwjglutils.OGLTexture;
 import lwjglutils.ShaderUtils;
 
 import java.util.HashMap;
@@ -13,11 +14,14 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL31.glPrimitiveRestartIndex;
 
 public class Grid extends Solid {
-    public static final int FUNC_TYPE_GRID = 0;
-    public static final int FUNC_TYPE_WAVE = 1;
-    public static final int FUNC_TYPE_SPHERE = 2;
-    public static final int FUNC_TYPE_CYLINDER = 3;
-    public static final int FUNC_TYPE_HOURGLASS = 4;
+
+    public enum FuncType {
+        GRID,
+        WAVE,
+        SPHERE,
+        CYLINDER,
+        HOURGLASS
+    }
 
     private static final int GL_PRIMITIVE_RESTART_INDEX = 65535;
     private static final Set<String> SHADER_UNIFORM_NAMES = Set.of(
@@ -27,17 +31,18 @@ public class Grid extends Solid {
     private static int shaderProgram;
     private static boolean shaderLoaded = false;
 
-    private int funcType;
+    private FuncType funcType;
+    private OGLTexture texture;
 
     public Grid() {
         this(50, 50);
     }
 
     public Grid(int width, int height) {
-        this(width, height, GL_TRIANGLE_STRIP, FUNC_TYPE_GRID);
+        this(width, height, GL_TRIANGLE_STRIP, FuncType.GRID);
     }
 
-    public Grid(int width, int height, int topology, int funcType) {
+    public Grid(int width, int height, int topology, FuncType funcType) {
         // convert number of edges into number of vertices
         width += 1;
         height += 1;
@@ -82,7 +87,10 @@ public class Grid extends Solid {
         glUniformMatrix4fv(shaderUniforms.get("uViewMat"), false, viewMatrix.floatArray());
         glUniformMatrix4fv(shaderUniforms.get("uProjMat"), false, projectionMatrix.floatArray());
         glUniform3fv(shaderUniforms.get("uColor"), color);
-        glUniform1i(shaderUniforms.get("uFuncType"), funcType);
+        glUniform1i(shaderUniforms.get("uFuncType"), funcType.ordinal());
+        if (texture != null) {
+            texture.bind(shaderProgram, "uTexture", texture.getTextureId());
+        }
     }
 
     private float[] createVertexBuffer(int width, int height) {
@@ -131,11 +139,19 @@ public class Grid extends Solid {
         return ib;
     }
 
-    public int getFuncType() {
+    public FuncType getFuncType() {
         return funcType;
     }
 
-    public void setFuncType(int funcType) {
+    public void setFuncType(FuncType funcType) {
         this.funcType = funcType;
+    }
+
+    public OGLTexture getTexture() {
+        return texture;
+    }
+
+    public void setTexture(OGLTexture texture) {
+        this.texture = texture;
     }
 }
