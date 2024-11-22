@@ -5,55 +5,79 @@ in vec2 inPosition;
 out vec2 texturePos;
 out vec3 lightVector;
 out vec3 normalVector;
+out vec3 fragPos;
 
 uniform mat4 uModelMat;
 uniform mat4 uViewMat;
 uniform mat4 uProjMat;
 uniform int uFuncType;
+uniform float uTime;
 
 const float PI = radians(180);
-const vec3 LIGHT = vec3(1.0, 0.0, 1);
+const vec3 LIGHT = vec3(1.5, 0.0, 1);
 
+const int GRID = 0;
 const int WAVE = 1;
 const int SPHERE = 2;
 const int CYLINDER = 3;
 const int HOURGLASS = 4;
+const int SPHERICAL_HOURGLASS = 5;
+const int TENT = 6;
 
 vec3 calcPosition(vec2 position) {
-    position = position*2 - 1;
     vec3 pos = vec3(position, 0);
 
     float azimuth, zenith;
     switch(uFuncType) {
+        case GRID:
+        pos.x = pos.x*2 - 1;
+        pos.y = pos.y*2 - 1;
+        break;
+
         case WAVE:
-        pos.z = 0.5 * cos(sqrt(5 * pow(pos.x, 2)) - sqrt(5 * pow(pos.y, 2)));
+        pos.x = pos.x*2 - 1;
+        pos.y = pos.y*2 - 1;
+        pos.z = 0.2 * cos(3*(pos.x + (uTime/10000))) * sin(5*(pos.y + (uTime/5000)));
         break;
 
         case SPHERE:
-        float azimuth = position.x * PI;
-        float zenith = position.y * 2*PI;
-        float R = 1;
+        azimuth = pos.x * 2*PI;
+        zenith = pos.y * PI;
 
-        //vec3 pos;
-        pos.x = R*sin(zenith)*sin(azimuth);
-        pos.y = R*sin(zenith)*cos(azimuth);
-        pos.z = R*cos(zenith);
+        pos.x = sin(zenith)*sin(azimuth);
+        pos.y = sin(zenith)*cos(azimuth);
+        pos.z = cos(zenith);
         break;
 
         case CYLINDER:
-        zenith = position.y * 2*PI;
+        azimuth = pos.x * 2*PI;
 
-        pos.x = sin(zenith);
-        pos.y = cos(zenith);
-        pos.z = position.x;
+        pos.z = (1 - pos.y)*2 - 1;
+        pos.x = sin(azimuth);
+        pos.y = cos(azimuth);
         break;
 
         case HOURGLASS:
-        zenith = pos.y * 2*PI;
+        azimuth = pos.x * 2*PI;
 
-        pos.z = pos.x;
-        pos.x = sin(zenith)*pos.z;
-        pos.y = cos(zenith)*pos.z;
+        pos.z = (1 - pos.y)*2 - 1;
+        pos.x = sin(azimuth)*pos.z;
+        pos.y = cos(azimuth)*pos.z;
+        break;
+
+        case SPHERICAL_HOURGLASS:
+        azimuth = pos.x * 2*PI;
+        zenith = pos.y * PI;
+
+        pos.x = sin(zenith)*sin(azimuth)*cos(zenith);
+        pos.y = sin(zenith)*cos(azimuth)*cos(zenith);
+        pos.z = cos(zenith);
+        break;
+
+        case TENT:
+        pos.x = pos.x*2 - 1;
+        pos.y = pos.y*2 - 1;
+        pos.z = (1 - abs(pos.x)) * (1 - abs(pos.y));
         break;
     }
 
@@ -64,20 +88,18 @@ vec3 calcNormal(vec3 pos, vec2 inPos) {
     vec3 dx = calcPosition(inPos + vec2(0.1, 0)) - pos;
     vec3 dy = calcPosition(inPos + vec2(0, 0.1)) - pos;
 
-    if (uFuncType == SPHERE) {
-        return pos;
-    }
-
     return cross(dx, dy);
 }
 
 void main() {
+    texturePos = inPosition;
+
     vec3 pos = calcPosition(inPosition);
     mat4 mvMat = uViewMat * uModelMat;
     vec4 mvPos = mvMat * vec4(pos, 1);
-    vec3 mvPos3 = mvPos.xyz;
+    vec3 mvPos3 = mvPos.xyz/mvPos.w;
 
-    texturePos = inPosition;
+    fragPos = mvPos3;
     lightVector = vec3(uViewMat * vec4(LIGHT, 1)) - mvPos3;
     normalVector = transpose(inverse(mat3(mvMat))) * calcNormal(pos, inPosition);
 

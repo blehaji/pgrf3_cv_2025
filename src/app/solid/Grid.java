@@ -20,19 +20,33 @@ public class Grid extends Solid {
         WAVE,
         SPHERE,
         CYLINDER,
-        HOURGLASS
+        HOURGLASS,
+        SPHERICAL_HOURGLASS,
+        TENT
+    }
+
+    public enum ColorMode {
+        COLOR,
+        TEXTURE,
+        VIEW_NORMAL,
+        UV,
+        DEPTH,
+        FRAG_POS,
+        LIGHT_DIST
     }
 
     private static final int GL_PRIMITIVE_RESTART_INDEX = 65535;
     private static final Set<String> SHADER_UNIFORM_NAMES = Set.of(
-            "uModelMat", "uViewMat", "uProjMat", "uColor", "uFuncType"
+            "uModelMat", "uViewMat", "uProjMat", "uColor", "uFuncType", "uColorMode", "uTime"
     );
     private static final Map<String, Integer> shaderUniforms = new HashMap<>();
     private static int shaderProgram;
     private static boolean shaderLoaded = false;
 
     private FuncType funcType;
+    private ColorMode colorMode;
     private OGLTexture texture;
+    private final long start;
 
     public Grid() {
         this(50, 50);
@@ -53,6 +67,8 @@ public class Grid extends Solid {
 
         this.topology = topology;
         this.funcType = funcType;
+        this.colorMode = ColorMode.COLOR;
+        this.start = System.currentTimeMillis();
 
         float[] vb = createVertexBuffer(width, height);
         int[] ib = createIndexBuffer(width, height, topology);
@@ -86,8 +102,10 @@ public class Grid extends Solid {
         glUniformMatrix4fv(shaderUniforms.get("uModelMat"), false, modelMatrix.floatArray());
         glUniformMatrix4fv(shaderUniforms.get("uViewMat"), false, viewMatrix.floatArray());
         glUniformMatrix4fv(shaderUniforms.get("uProjMat"), false, projectionMatrix.floatArray());
+        glUniform1f(shaderUniforms.get("uTime"), (float) (System.currentTimeMillis() - start));
         glUniform3fv(shaderUniforms.get("uColor"), color);
         glUniform1i(shaderUniforms.get("uFuncType"), funcType.ordinal());
+        glUniform1i(shaderUniforms.get("uColorMode"), colorMode.ordinal());
         if (texture != null) {
             texture.bind(shaderProgram, "uTexture", texture.getTextureId());
         }
@@ -145,6 +163,14 @@ public class Grid extends Solid {
 
     public void setFuncType(FuncType funcType) {
         this.funcType = funcType;
+    }
+
+    public ColorMode getColorMode() {
+        return colorMode;
+    }
+
+    public void setColorMode(ColorMode colorMode) {
+        this.colorMode = colorMode;
     }
 
     public OGLTexture getTexture() {

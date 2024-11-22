@@ -25,6 +25,7 @@ public class Renderer extends AbstractRenderer {
     private Mat4 projectionMatrix;
     private final Map<String, OGLTexture> textures = new HashMap<>();
     private final List<Grid> grids = new ArrayList<>();
+    private Grid grid;
     private int polygonMode = GL_FILL;
     private boolean isPerspectiveProjection = true;
     private boolean isMousePressed = false;
@@ -34,13 +35,16 @@ public class Renderer extends AbstractRenderer {
     public void init() {
         loadTextures();
 
-        Grid grid = new Grid();
-        Grid ball = new Grid(50, 50, GL_TRIANGLES, Grid.FuncType.WAVE);
-        ball.setColor(1, 0, 1);
-        ball.scale(new Vec3D(0.5));
+        Grid floor = new Grid();
+        floor.scale(new Vec3D(4));
+        grid = new Grid(100, 100, GL_TRIANGLES, Grid.FuncType.SPHERE);
+        grid.setColor(1, 1, 0);
+        grid.translate(new Vec3D(0, 0, 1));
+        grid.setTexture(textures.get("globe.png"));
+        grid.setColorMode(Grid.ColorMode.TEXTURE);
 
+        grids.add(floor);
         grids.add(grid);
-        grids.add(ball);
 
         camera = new Camera()
                 .withPosition(new Vec3D(0, -2, 1))
@@ -105,6 +109,18 @@ public class Renderer extends AbstractRenderer {
         updateGrids();
     }
 
+    private void changeColorMode() {
+        Grid.ColorMode[] colorModes = Grid.ColorMode.values();
+        Grid.ColorMode colorMode = grid.getColorMode();
+        grid.setColorMode(colorModes[(colorMode.ordinal() + 1) % colorModes.length]);
+    }
+
+    private void changeFunctionType() {
+        Grid.FuncType[] functionTypes = Grid.FuncType.values();
+        Grid.FuncType functionType = grid.getFuncType();
+        grid.setFuncType(functionTypes[(functionType.ordinal() + 1) % functionTypes.length]);
+    }
+
     private void onKeyPress(int key, int mods) {
         switch (key) {
             case GLFW.GLFW_KEY_P:
@@ -115,11 +131,17 @@ public class Renderer extends AbstractRenderer {
                 updateProjectionMatrix();
                 break;
 
+            case GLFW.GLFW_KEY_C:
+                changeColorMode();
+                break;
+            case GLFW.GLFW_KEY_F:
+                changeFunctionType();
+                break;
             case GLFW.GLFW_KEY_UP:
-                grids.get(1).translate(new Vec3D(0, 0, 0.5));
+                grid.translate(new Vec3D(0, 0, 0.5));
                 break;
             case GLFW.GLFW_KEY_DOWN:
-                grids.get(1).translate(new Vec3D(0, 0, -0.5));
+                grid.translate(new Vec3D(0, 0, -0.5));
                 break;
         }
     }
