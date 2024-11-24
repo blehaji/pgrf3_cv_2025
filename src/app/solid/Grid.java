@@ -37,7 +37,8 @@ public class Grid extends Solid {
 
     private static final int GL_PRIMITIVE_RESTART_INDEX = 65535;
     private static final Set<String> SHADER_UNIFORM_NAMES = Set.of(
-            "uModelMat", "uViewMat", "uProjMat", "uColor", "uFuncType", "uColorMode", "uTime"
+            "uModelMat", "uViewMat", "uProjMat", "uColor", "uFuncType", "uColorMode", "uTime", "uEnableLighting",
+            "uLightPosition"
     );
     private static final Map<String, Integer> shaderUniforms = new HashMap<>();
     private static int shaderProgram;
@@ -47,6 +48,8 @@ public class Grid extends Solid {
     private ColorMode colorMode;
     private OGLTexture texture;
     private final long start;
+    private boolean enableLighting = true;
+    private float[] lightPosition = new float[3];
 
     public Grid() {
         this(50, 50);
@@ -109,6 +112,8 @@ public class Grid extends Solid {
         if (texture != null) {
             texture.bind(shaderProgram, "uTexture", texture.getTextureId());
         }
+        glUniform1i(shaderUniforms.get("uEnableLighting"), enableLighting ? 1 : 0);
+        glUniform3fv(shaderUniforms.get("uLightPosition"), lightPosition);
     }
 
     private float[] createVertexBuffer(int width, int height) {
@@ -179,5 +184,21 @@ public class Grid extends Solid {
 
     public void setTexture(OGLTexture texture) {
         this.texture = texture;
+    }
+
+    public boolean isEnableLighting() {
+        return enableLighting;
+    }
+
+    public void setEnableLighting(boolean enableLighting) {
+        this.enableLighting = enableLighting;
+    }
+
+    public float[] getLightPosition() {
+        return lightPosition;
+    }
+
+    public void setLightPosition(float[] lightPosition) {
+        this.lightPosition = lightPosition;
     }
 }

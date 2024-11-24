@@ -10,10 +10,14 @@ out vec4 outColor;
 uniform int uColorMode;
 uniform vec3 uColor;
 uniform sampler2D uTexture;
+uniform bool uEnableLighting;
 
-const vec3 AMBIENT_COLOR = vec3(0.4, 0.4, 0.4);
-const vec3 DIFFUSE_COLOR = vec3(0.6, 0.6, 0.6);
+const vec3 AMBIENT_COLOR = vec3(0.4);
+const vec3 DIFFUSE_COLOR = vec3(0.6);
+const vec3 SPECULAR_COLOR = vec3(0.8);
 const float INTENSITY = 1;
+const float SHININESS = 30;
+const float SPECULAR_POWER = 1;
 
 const int COLOR_MODE_COLOR = 0;
 const int COLOR_MODE_TEXTURE = 1;
@@ -28,6 +32,10 @@ void main() {
     vec3 nd = normalize(normalVector);
     float NDL = max(dot(nd, ld), 0);
     float lightDist = length(lightVector);
+    float attenuation = min(1, 1/pow(lightDist, 2));
+    vec3 vd = normalize(-fragPos);
+    vec3 hd = normalize(ld + vd);
+    float HDN = max(dot(hd, nd), 0);
     vec3 baseColor;
 
     switch (uColorMode) {
@@ -48,7 +56,7 @@ void main() {
         break;
 
         case COLOR_MODE_DEPTH:
-        baseColor = vec3(gl_FragCoord.z);
+        baseColor = vec3(1/(gl_FragCoord.z / gl_FragCoord.w));
         break;
 
         case COLOR_MODE_FRAG_POS:
@@ -61,6 +69,11 @@ void main() {
     }
 
     vec3 totalDiffuse = INTENSITY * NDL * DIFFUSE_COLOR;
+    vec3 totalSpecular = SPECULAR_POWER * pow(HDN, 4 * SHININESS) * SPECULAR_COLOR;
 
-    outColor = vec4((AMBIENT_COLOR + totalDiffuse) * baseColor, 1);
+    if (uEnableLighting) {
+        outColor = vec4((AMBIENT_COLOR + attenuation*(totalDiffuse + totalSpecular)) * baseColor, 1);
+    } else {
+        outColor = vec4(baseColor, 1);
+    }
 }

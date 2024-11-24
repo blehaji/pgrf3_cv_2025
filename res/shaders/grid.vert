@@ -12,6 +12,7 @@ uniform mat4 uViewMat;
 uniform mat4 uProjMat;
 uniform int uFuncType;
 uniform float uTime;
+uniform vec3 uLightPosition;
 
 const float PI = radians(180);
 const vec3 LIGHT = vec3(1.5, 0.0, 1);
@@ -100,7 +101,7 @@ void main() {
     vec3 mvPos3 = mvPos.xyz/mvPos.w;
 
     fragPos = mvPos3;
-    lightVector = vec3(uViewMat * vec4(LIGHT, 1)) - mvPos3;
+    lightVector = vec3(uViewMat * vec4(uLightPosition, 1)) - mvPos3;
     normalVector = transpose(inverse(mat3(mvMat))) * calcNormal(pos, inPosition);
 
     gl_Position = uProjMat * mvPos;
