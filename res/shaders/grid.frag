@@ -37,6 +37,7 @@ void main() {
     vec3 hd = normalize(ld + vd);
     float HDN = max(dot(hd, nd), 0);
     vec3 baseColor;
+    vec2 uv = vec2(1 - texturePos.x, texturePos.y);
 
     switch (uColorMode) {
         case COLOR_MODE_COLOR:
@@ -44,7 +45,7 @@ void main() {
         break;
 
         case COLOR_MODE_TEXTURE:
-        baseColor = texture2D(uTexture, texturePos).xyz;
+        baseColor = texture2D(uTexture, uv).xyz;
         break;
 
         case COLOR_MODE_VIEW_NORMAL:
@@ -52,7 +53,7 @@ void main() {
         break;
 
         case COLOR_MODE_UV:
-        baseColor = vec3(texturePos, 0);
+        baseColor = vec3(uv, 0);
         break;
 
         case COLOR_MODE_DEPTH:
