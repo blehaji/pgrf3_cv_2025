@@ -1,6 +1,7 @@
 package app;
 
 import app.solid.Grid;
+import lwjglutils.OGLRenderTarget;
 import lwjglutils.OGLTextRenderer;
 import lwjglutils.OGLTexture;
 import lwjglutils.OGLTexture2D;
@@ -16,6 +17,8 @@ import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
+import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.opengl.GL31.GL_PRIMITIVE_RESTART;
 
 public class Renderer extends AbstractRenderer {
@@ -49,10 +52,18 @@ public class Renderer extends AbstractRenderer {
     private boolean isMousePressed = false;
     private final double[] mouseOrigin = new double[2];
     private Vec3D lightPosition = new Vec3D(1.5, 0, 1.5);
+    private final Vec3D lightDirection = new Vec3D(0, 0, -1);
+    private Mat4 lightView = new Mat4ViewRH(lightPosition, lightDirection, new Vec3D(0, 0, 1));
+    private final Mat4 lightProj = new Mat4OrthoRH(15, 15, 0.01, 100);
+    private OGLRenderTarget lightTarget;
+    private OGLTexture2D.Viewer viewer;
+    private boolean enableShadows = false;
 
     @Override
     public void init() {
         textRenderer = new OGLTextRenderer(width, height);
+        lightTarget = new OGLRenderTarget(2048, 2048);
+        viewer = new OGLTexture2D.Viewer();
 
         loadTextures();
 
@@ -107,10 +118,10 @@ public class Renderer extends AbstractRenderer {
         grid.setTexture(textures.get(textureNames.get(textureIndex)));
     }
 
-    private void updateGrids() {
+    private void updateGrids(Mat4 projectionMatrix, Mat4 viewMatrix) {
         if (light != null) {
             light.setProjectionMatrix(projectionMatrix);
-            light.setViewMatrix(camera.getViewMatrix());
+            light.setViewMatrix(viewMatrix);
         }
 
         float[] lightPositionF = new float[] {
@@ -120,24 +131,37 @@ public class Renderer extends AbstractRenderer {
         };
 
         for (Grid grid : grids) {
+            grid.setEnableShadows(enableShadows);
             grid.setLightPosition(lightPositionF);
+            grid.setLightVPMat(lightView.mul(lightProj));
             grid.setProjectionMatrix(projectionMatrix);
-            grid.setViewMatrix(camera.getViewMatrix());
+            grid.setViewMatrix(viewMatrix);
         }
     }
 
     @Override
     public void display() {
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, polygonMode.getValue());
 
-        light.draw();
-
+        lightTarget.bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        updateGrids(lightProj, lightView);
         for (Grid grid : grids) {
             grid.draw();
         }
 
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+
+        updateGrids(projectionMatrix, camera.getViewMatrix());
+        light.draw();
+        for (Grid grid : grids) {
+            grid.setShadowMap(lightTarget.getDepthTexture());
+            grid.draw();
+        }
+
+        viewer.view(lightTarget.getDepthTexture(), -1, -1, 0.5, (double) height/width);
         drawText();
     }
 
@@ -147,6 +171,7 @@ public class Renderer extends AbstractRenderer {
         textRenderer.addStr2D(5, 65, String.format("[C] Color mode: %s", grid.getColorMode()));
         textRenderer.addStr2D(5, 85, String.format("[P] Polygon mode: %s", polygonMode));
         textRenderer.addStr2D(5, 105, String.format("[T] Texture: %s", textureNames.get(textureIndex)));
+        textRenderer.addStr2D(5, 125, String.format("[M] Shadow map: %s", enableShadows));
     }
 
     private void changePolygonMode() {
@@ -158,7 +183,6 @@ public class Renderer extends AbstractRenderer {
         projectionMatrix = isPerspectiveProjection
                 ? new Mat4PerspRH(Math.toRadians(70), (double) height / (double) width, 0.01, 100)
                 : new Mat4OrthoRH(5 * ((double) width / height), 5, 0.01, 100);
-        updateGrids();
     }
 
     private void changeColorMode() {
@@ -173,7 +197,7 @@ public class Renderer extends AbstractRenderer {
         grid.setFuncType(functionTypes[(functionType.ordinal() + 1) % functionTypes.length]);
     }
 
-    private void onKeyPress(int key, int mods) {
+    private void onKeyPress(int key) {
         switch (key) {
             case GLFW.GLFW_KEY_P:
                 changePolygonMode();
@@ -192,6 +216,9 @@ public class Renderer extends AbstractRenderer {
             case GLFW.GLFW_KEY_T:
                 textureIndex = (textureIndex + 1) % textures.size();
                 setTexture(grid);
+                break;
+            case GLFW.GLFW_KEY_M:
+                enableShadows = !enableShadows;
                 break;
         }
     }
@@ -220,6 +247,7 @@ public class Renderer extends AbstractRenderer {
         }
         light.translate(direction);
         lightPosition = lightPosition.add(direction);
+        lightView = new Mat4ViewRH(lightPosition, lightDirection, new Vec3D(0, 0, 1));
     }
 
     private void rotateCamera(double x, double y) {
@@ -227,20 +255,18 @@ public class Renderer extends AbstractRenderer {
                 .addZenith(Math.PI * (mouseOrigin[1] - y) / height);
         mouseOrigin[0] = x;
         mouseOrigin[1] = y;
-        updateGrids();
     }
 
     private final GLFWKeyCallback keyCallback = new GLFWKeyCallback() {
         @Override
         public void invoke(long window, int key, int scancode, int action, int mods) {
             if (action == GLFW.GLFW_PRESS) {
-                onKeyPress(key, mods);
+                onKeyPress(key);
             }
 
             if (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT) {
                 moveCamera(key);
                 moveLight(key);
-                updateGrids();
             }
         }
     };

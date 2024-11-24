@@ -6,6 +6,7 @@ out vec2 texturePos;
 out vec3 lightVector;
 out vec3 normalVector;
 out vec3 fragPos;
+out vec4 shadowPos;
 
 uniform mat4 uModelMat;
 uniform mat4 uViewMat;
@@ -13,6 +14,7 @@ uniform mat4 uProjMat;
 uniform int uFuncType;
 uniform float uTime;
 uniform vec3 uLightPosition;
+uniform mat4 uLightVPMat;
 
 const float PI = radians(180);
 const vec3 LIGHT = vec3(1.5, 0.0, 1);
@@ -103,6 +105,7 @@ void main() {
     fragPos = mvPos3;
     lightVector = vec3(uViewMat * vec4(uLightPosition, 1)) - mvPos3;
     normalVector = transpose(inverse(mat3(mvMat))) * calcNormal(pos, inPosition);
+    shadowPos = uLightVPMat * uModelMat * vec4(pos, 1);
 
     gl_Position = uProjMat * mvPos;
 }

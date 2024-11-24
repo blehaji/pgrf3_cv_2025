@@ -3,6 +3,7 @@ package app.solid;
 import lwjglutils.OGLBuffers;
 import lwjglutils.OGLTexture;
 import lwjglutils.ShaderUtils;
+import transforms.Mat4;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class Grid extends Solid {
     private static final int GL_PRIMITIVE_RESTART_INDEX = 65535;
     private static final Set<String> SHADER_UNIFORM_NAMES = Set.of(
             "uModelMat", "uViewMat", "uProjMat", "uColor", "uFuncType", "uColorMode", "uTime", "uEnableLighting",
-            "uLightPosition"
+            "uLightPosition", "uLightVPMat", "uEnableShadows"
     );
     private static final Map<String, Integer> shaderUniforms = new HashMap<>();
     private static int shaderProgram;
@@ -50,6 +51,9 @@ public class Grid extends Solid {
     private final long start;
     private boolean enableLighting = true;
     private float[] lightPosition = new float[3];
+    private OGLTexture shadowMap;
+    private Mat4 lightVPMat;
+    private boolean enableShadows = false;
 
     public Grid() {
         this(50, 50);
@@ -114,6 +118,13 @@ public class Grid extends Solid {
         }
         glUniform1i(shaderUniforms.get("uEnableLighting"), enableLighting ? 1 : 0);
         glUniform3fv(shaderUniforms.get("uLightPosition"), lightPosition);
+        if (shadowMap != null) {
+            shadowMap.bind(shaderProgram, "uShadowMap", shadowMap.getTextureId());
+        }
+        if (lightVPMat != null) {
+            glUniformMatrix4fv(shaderUniforms.get("uLightVPMat"), false, lightVPMat.floatArray());
+        }
+        glUniform1i(shaderUniforms.get("uEnableShadows"), enableShadows ? 1 : 0);
     }
 
     private float[] createVertexBuffer(int width, int height) {
@@ -200,5 +211,29 @@ public class Grid extends Solid {
 
     public void setLightPosition(float[] lightPosition) {
         this.lightPosition = lightPosition;
+    }
+
+    public OGLTexture getShadowMap() {
+        return shadowMap;
+    }
+
+    public void setShadowMap(OGLTexture shadowMap) {
+        this.shadowMap = shadowMap;
+    }
+
+    public Mat4 getLightVPMat() {
+        return lightVPMat;
+    }
+
+    public void setLightVPMat(Mat4 lightVPMat) {
+        this.lightVPMat = lightVPMat;
+    }
+
+    public boolean isEnableShadows() {
+        return enableShadows;
+    }
+
+    public void setEnableShadows(boolean enableShadows) {
+        this.enableShadows = enableShadows;
     }
 }

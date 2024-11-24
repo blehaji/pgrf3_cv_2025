@@ -4,6 +4,7 @@ in vec2 texturePos;
 in vec3 lightVector;
 in vec3 normalVector;
 in vec3 fragPos;
+in vec4 shadowPos;
 
 out vec4 outColor;
 
@@ -11,6 +12,8 @@ uniform int uColorMode;
 uniform vec3 uColor;
 uniform sampler2D uTexture;
 uniform bool uEnableLighting;
+uniform sampler2D uShadowMap;
+uniform bool uEnableShadows;
 
 const vec3 AMBIENT_COLOR = vec3(0.4);
 const vec3 DIFFUSE_COLOR = vec3(0.6);
@@ -38,6 +41,11 @@ void main() {
     float HDN = max(dot(hd, nd), 0);
     vec3 baseColor;
     vec2 uv = vec2(1 - texturePos.x, texturePos.y);
+    vec3 shadowTexPos = (shadowPos.xyz/shadowPos.w + 1)/2;
+    bool inLightFrustum =
+        shadowTexPos.x >= 0 && shadowTexPos.x <= 1
+        && shadowTexPos.y >= 0 && shadowTexPos.y <= 1
+        && shadowTexPos.z >= 0 && shadowTexPos.z <= 1;
 
     switch (uColorMode) {
         case COLOR_MODE_COLOR:
@@ -72,8 +80,29 @@ void main() {
     vec3 totalDiffuse = INTENSITY * NDL * DIFFUSE_COLOR;
     vec3 totalSpecular = SPECULAR_POWER * pow(HDN, 4 * SHININESS) * SPECULAR_COLOR;
 
+    float shadow = 0;
+    if (inLightFrustum && uEnableShadows) {
+        vec2 texelSize = 1/textureSize(uShadowMap, 0);
+        texelSize *= abs(NDL) * 0.75 + 0.25;
+
+        float bias = 1e-5;
+        if (abs(shadowPos.w - 1) > bias) {
+            bias *= pow(10, log(lightDist));
+            float angle = max(pow(-abs(NDL) + 1, 2), 0.15);
+            bias += min(5e-3 / pow(18, log(NDL)), 5e-4);
+        }
+
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -2; y <= 2; y++) {
+                float depth = texture(uShadowMap, shadowTexPos.xy + texelSize*vec2(x, y)).z;
+                shadow += depth < shadowTexPos.z - bias ? 1 : 0;
+            }
+        }
+        shadow /= 25;
+    }
+
     if (uEnableLighting) {
-        outColor = vec4((AMBIENT_COLOR + attenuation*(totalDiffuse + totalSpecular)) * baseColor, 1);
+        outColor = vec4((AMBIENT_COLOR + (1 - shadow)*attenuation*(totalDiffuse + totalSpecular)) * baseColor, 1);
     } else {
         outColor = vec4(baseColor, 1);
     }
