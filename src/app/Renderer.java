@@ -58,7 +58,7 @@ public class Renderer extends AbstractRenderer {
 
         Grid floor = new Grid();
         floor.scale(new Vec3D(4));
-        grid = new Grid(100, 100, GL_TRIANGLES, Grid.FuncType.SPHERE);
+        grid = new Grid(100, 100, GL_TRIANGLES, Grid.FuncType.WAVE);
         grid.setColor(1, 1, 0);
         grid.translate(new Vec3D(0, 0, 1));
         setTexture(grid);
@@ -113,7 +113,14 @@ public class Renderer extends AbstractRenderer {
             light.setViewMatrix(camera.getViewMatrix());
         }
 
+        float[] lightPositionF = new float[] {
+                (float) lightPosition.getX(),
+                (float) lightPosition.getY(),
+                (float) lightPosition.getZ()
+        };
+
         for (Grid grid : grids) {
+            grid.setLightPosition(lightPositionF);
             grid.setProjectionMatrix(projectionMatrix);
             grid.setViewMatrix(camera.getViewMatrix());
         }
@@ -126,14 +133,8 @@ public class Renderer extends AbstractRenderer {
         glPolygonMode(GL_FRONT_AND_BACK, polygonMode.getValue());
 
         light.draw();
-        float[] lightPositionF = new float[] {
-                (float) lightPosition.getX(),
-                (float) lightPosition.getY(),
-                (float) lightPosition.getZ()
-        };
 
         for (Grid grid : grids) {
-            grid.setLightPosition(lightPositionF);
             grid.draw();
         }
 
@@ -205,7 +206,6 @@ public class Renderer extends AbstractRenderer {
             case GLFW.GLFW_KEY_SPACE -> camera = camera.up(speed);
             case GLFW.GLFW_KEY_X -> camera = camera.down(speed);
         }
-        updateGrids();
     }
 
     private void moveLight(int key) {
@@ -240,6 +240,7 @@ public class Renderer extends AbstractRenderer {
             if (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT) {
                 moveCamera(key);
                 moveLight(key);
+                updateGrids();
             }
         }
     };
